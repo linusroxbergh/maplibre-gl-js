@@ -1583,6 +1583,33 @@ describe('TileManager._updateRetainedTiles', () => {
         });
     });
 
+    test('use cached ancestor tile when ideal tile is not loaded and no ancestor is in view', () => {
+        const tileManager = createTileManager();
+        tileManager._source.loadTile = async (tile) => {
+            tile.state = 'loaded';
+        };
+        const context = createCameraContext();
+        let view = createCameraViewState();
+        view = resize(view, context, 512, 512);
+        tileManager.updateCacheSize(projectCamera(view, context));
+
+        const grandparentTile = new OverscaledTileID(0, 0, 0, 0, 0);
+        tileManager._addTile(grandparentTile);
+        tileManager._removeTile(grandparentTile.key);
+
+        tileManager._source.loadTile = async (tile) => {
+            tile.state = 'loading';
+        };
+        const idealTile = new OverscaledTileID(2, 0, 2, 0, 0);
+        const retained = tileManager._updateRetainedTiles([idealTile], 2);
+
+        expect(retained).toEqual({
+            [grandparentTile.key]: grandparentTile,
+            [idealTile.key]: idealTile
+        });
+        expect(tileManager.getTile(grandparentTile).hasData()).toBe(true);
+    });
+
     test('don\'t load parent if all immediate children are loaded', () => {
         const tileManager = createTileManager();
         tileManager._source.loadTile = async (tile) => {
