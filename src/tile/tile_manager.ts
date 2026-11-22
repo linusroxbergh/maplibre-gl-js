@@ -688,7 +688,8 @@ export class TileManager extends Evented<SourceEventType> {
     /**
      * Set tiles to be retained on update of the source. For ideal tiles that do not have data, retain their loaded
      * children so they can be displayed as substitutes pending load of each ideal tile (to reduce flickering).
-     * If no loaded children are available, fallback to seeking loaded parents as an alternative substitute.
+     * If no loaded children are available, fallback to seeking loaded parents, in view or in the out-of-view cache,
+     * as an alternative substitute.
      */
     _updateRetainedTiles(idealTileIDs: OverscaledTileID[], zoom: number): Record<string, OverscaledTileID> {
         const idealTilesWithoutData = new Set<OverscaledTileID>();
@@ -723,7 +724,7 @@ export class TileManager extends Evented<SourceEventType> {
                 checked[parentId.key] = true;
 
                 tile = this.getTile(parentId);
-                if (!tile && parentWasRequested) {
+                if (!tile && (parentWasRequested || this._outOfViewCache.has(parentId))) {
                     tile = this._addTile(parentId);
                 }
                 if (tile) {
